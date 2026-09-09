@@ -20,6 +20,28 @@ from stone_detector import (find_stone_slot, is_stone_empty, is_garage_open,
                             save_debug_screenshot)
 
 
+_abort = [False]              # กด F10 พักระหว่างกำลังฝาก/ทิ้ง → ให้เลิกกลางคัน
+
+
+def request_abort():
+    """สั่งให้ขั้นตอนฝาก/ทิ้งที่กำลังทำอยู่ หยุดทันที (เรียกตอนกด F10 พัก)"""
+    _abort[0] = True
+    inp.request_stop()      # ปลุกการรอ/ปล่อยปุ่มเมาส์ที่กดค้างอยู่ทันที
+
+
+def clear_abort():
+    _abort[0] = False
+    inp.clear_stop()
+
+
+def _sleep(seconds):
+    """
+    รอแบบตื่นทันทีเมื่อกด F10 พัก
+    คืน True ถ้ารอครบ, False ถ้าโดนสั่งหยุด
+    """
+    return inp.sleep(seconds) and not _abort[0]
+
+
 def _recover(sct):
     """กู้สถานะก่อนลองใหม่: แผนที่/เมนูค้าง → ESC, โฟกัสหลุด → ดึงเกมกลับ"""
     if not inp.is_game_focused():
@@ -28,7 +50,7 @@ def _recover(sct):
     if is_map_open(sct):
         print("[กู้] เจอแผนที่/เมนูค้าง → กด ESC ปิด")
         inp.press_esc()
-        time.sleep(1.0)
+        _sleep(1.0)
     inp.focus_game()
 
 
@@ -57,7 +79,7 @@ def _find_slot_with_scroll(sct, region, tag):
 
     print(f"[{tag}] หาช่องไม่เจอ → เลื่อนขึ้นบนสุดแล้วหาใหม่")
     inp.scroll_up(notches=10, x=cx, y=cy)
-    time.sleep(0.4)
+    _sleep(0.4)
     slot = find_stone_slot(sct, region)
     if slot is not None:
         return slot
@@ -65,7 +87,7 @@ def _find_slot_with_scroll(sct, region, tag):
     print(f"[{tag}] ยังไม่เจอ → ไล่เลื่อนลงหาทีละนิด")
     for i in range(1, config.INV_SCROLL_RETRIES + 1):
         inp.scroll_down(notches=2, x=cx, y=cy)
-        time.sleep(0.4)
+        _sleep(0.4)
         slot = find_stone_slot(sct, region)
         if slot is not None:
             print(f"[{tag}] เจอหลังเลื่อนลง (ครั้งที่ {i})")
@@ -89,9 +111,9 @@ def drink_if_due(sct=None):
     for attempt in range(1, config.DRINK_RETRIES + 1):
         print(f"[น้ำ] ครบกำหนด — กด 1 ย้ำ 2 ที (รอบที่ {attempt})")
         inp.press_1()
-        time.sleep(0.3)
+        _sleep(0.3)
         inp.press_1()
-        time.sleep(config.DRINK_CHECK_DELAY)
+        _sleep(config.DRINK_CHECK_DELAY)
         if sct is None:                # ไม่มี sct → เช็คไม่ได้ กดรอบเดียวพอ
             break
         if is_drinking(sct):
@@ -100,7 +122,7 @@ def drink_if_due(sct=None):
         print("[น้ำ] ⚠ แถบ Loading ไม่ขึ้น — ลองใหม่")
 
     _last_drink[0] = now
-    time.sleep(config.AFTER_DRINK_DELAY)
+    _sleep(config.AFTER_DRINK_DELAY)
 
 
 def eat_if_due(sct=None):
@@ -119,9 +141,9 @@ def eat_if_due(sct=None):
     for attempt in range(1, config.DRINK_RETRIES + 1):
         print(f"[ข้าว] ครบกำหนด — กด 2 ย้ำ 2 ที (รอบที่ {attempt})")
         inp.press_2()
-        time.sleep(0.3)
+        _sleep(0.3)
         inp.press_2()
-        time.sleep(config.DRINK_CHECK_DELAY)
+        _sleep(config.DRINK_CHECK_DELAY)
         if sct is None:
             break
         if is_eating(sct):
@@ -130,19 +152,8 @@ def eat_if_due(sct=None):
         print("[ข้าว] ⚠ แถบ Loading ไม่ขึ้น — ลองใหม่")
 
     _last_eat[0] = now
-    time.sleep(config.AFTER_EAT_DELAY)
+    _sleep(config.AFTER_EAT_DELAY)
 
-
-_abort = [False]              # กด F10 พักระหว่างกำลังฝาก/ทิ้ง → ให้เลิกกลางคัน
-
-
-def request_abort():
-    """สั่งให้ขั้นตอนฝาก/ทิ้งที่กำลังทำอยู่ หยุดทันที (เรียกตอนกด F10 พัก)"""
-    _abort[0] = True
-
-
-def clear_abort():
-    _abort[0] = False
 
 
 
@@ -160,7 +171,7 @@ def _wait_for(sct, check, timeout, tag, what):
         if sct.ready() and check(sct):
             print(f"[{tag}] เห็น{what}แล้ว ({time.time() - t0:.1f} วิ)")
             return True
-        time.sleep(config.UI_POLL)
+        _sleep(config.UI_POLL)
     return False
 
 
@@ -205,7 +216,7 @@ def cancel_farm(tag="บอท", force=False):
     print(f"[{tag}] กด X ยกเลิกฟาร์ม")
     inp.press_x()
     _last_cancel[0] = now
-    time.sleep(config.CANCEL_KEY_DELAY)
+    _sleep(config.CANCEL_KEY_DELAY)
 
 
 def _cancel_before_open(tag):
@@ -222,7 +233,7 @@ def _fallback_discard(sct, reason):
     print(f"[ฝาก] {reason} — ท้ายรถเต็ม เปลี่ยนไปทิ้งของแทน "
           f"(ข้ามการฝาก {config.TRUNK_FULL_MEMORY/60:.0f} นาที)")
     inp.press_esc()
-    time.sleep(config.AFTER_CLOSE_DELAY)
+    _sleep(config.AFTER_CLOSE_DELAY)
     return _discard_items(sct)
 
 
@@ -256,7 +267,7 @@ def _deposit_to_trunk(sct):
         print(f"[ฝาก] กด L เปิดท้ายรถ (ครั้งที่ {attempt})...")
         inp.press_l()
         if not check_garage:          # ไม่มี template → เชื่อว่าเปิดแล้ว เดินหน้าต่อ
-            time.sleep(config.TRUNK_OPEN_DELAY)
+            _sleep(config.TRUNK_OPEN_DELAY)
             opened = True
             break
         if _wait_for(sct, is_garage_open, config.TRUNK_OPEN_DELAY,
@@ -294,7 +305,7 @@ def _deposit_to_trunk(sct):
         drop = candidates[(attempt - 1) % len(candidates)]
         print(f"[ฝาก] ลากไอเทม {slot} → {drop} (ครั้งที่ {attempt}/{attempts})")
         inp.drag(*slot, *drop, duration=config.t("DRAG_DURATION"))
-        time.sleep(config.t("DIALOG_OPEN_DELAY"))
+        _sleep(config.t("DIALOG_OPEN_DELAY"))
 
         if check_dialog and not is_dialog_open(sct):
             print("[ฝาก] ⚠ dialog ไม่เด้ง (ช่องปลายทางน่าจะมีของอยู่) — ลองจุดปล่อยถัดไป")
@@ -302,10 +313,10 @@ def _deposit_to_trunk(sct):
 
         print("[ฝาก] คลิก Max...")
         inp.click(*config.BTN_MAX)
-        time.sleep(config.t("CLICK_DELAY"))
+        _sleep(config.t("CLICK_DELAY"))
         print("[ฝาก] คลิกยืนยัน O...")
         inp.click(*config.BTN_CONFIRM)
-        time.sleep(config.t("AFTER_DEPOSIT_DELAY"))
+        _sleep(config.t("AFTER_DEPOSIT_DELAY"))
 
         # counter บน HUD ยังเห็นได้ทั้งที่หน้าต่างเปิดอยู่ → เช็คได้เลย
         if is_stone_empty(sct):
@@ -323,7 +334,7 @@ def _deposit_to_trunk(sct):
     # Step 4: ปิดหน้าต่าง
     print("[ฝาก] กด ESC ปิดหน้าต่าง")
     inp.press_esc()
-    time.sleep(config.AFTER_CLOSE_DELAY)
+    _sleep(config.AFTER_CLOSE_DELAY)
 
     # ตรวจว่า counter กลับเป็น 0/100 จริง
     if not is_stone_empty(sct):
@@ -361,7 +372,7 @@ def _discard_items(sct):
         print(f"[ทิ้ง] กด T เปิดกระเป๋า (ครั้งที่ {attempt})...")
         inp.press_t()
         if not check_bag:             # ไม่มี template → เชื่อว่าเปิดแล้ว เดินหน้าต่อ
-            time.sleep(config.BAG_OPEN_DELAY)
+            _sleep(config.BAG_OPEN_DELAY)
             opened = True
             break
         if _wait_for(sct, is_bag_open, config.BAG_OPEN_DELAY,
@@ -391,25 +402,25 @@ def _discard_items(sct):
     # Step 3: คลิกขวา → คลิก Delete
     print(f"[ทิ้ง] คลิกขวาช่องของ {slot}")
     inp.right_click(*slot)
-    time.sleep(config.t("MENU_OPEN_DELAY"))
+    _sleep(config.t("MENU_OPEN_DELAY"))
     dx, dy = config.DELETE_OFFSET
     del_pt = (slot[0] + dx, slot[1] + dy)
     print(f"[ทิ้ง] คลิก Delete ที่ {del_pt}")
     inp.click(*del_pt)
-    time.sleep(config.t("DIALOG_OPEN_DELAY"))
+    _sleep(config.t("DIALOG_OPEN_DELAY"))
 
     # Step 4: Max → ยืนยัน O
     print("[ทิ้ง] คลิก Max...")
     inp.click(*config.BTN_MAX)
-    time.sleep(config.t("CLICK_DELAY"))
+    _sleep(config.t("CLICK_DELAY"))
     print("[ทิ้ง] คลิกยืนยัน O...")
     inp.click(*config.BTN_CONFIRM)
-    time.sleep(config.t("AFTER_DEPOSIT_DELAY"))
+    _sleep(config.t("AFTER_DEPOSIT_DELAY"))
 
     # Step 5: ปิดหน้าต่าง
     print("[ทิ้ง] กด ESC ปิดหน้าต่าง")
     inp.press_esc()
-    time.sleep(config.AFTER_CLOSE_DELAY)
+    _sleep(config.AFTER_CLOSE_DELAY)
 
     # ตรวจว่า counter กลับเป็น 0/100 จริง
     if not is_stone_empty(sct):

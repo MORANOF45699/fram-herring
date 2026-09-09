@@ -120,8 +120,9 @@ def main():
             if config.PARK_GAME_OFFSCREEN and config.CAPTURE_MODE == "window":
                 inp.park_game()
         else:
-            request_abort()      # กำลังฝาก/ทิ้งอยู่ ให้เลิกกลางคันทันที
-            print("\n[บอท] ⏸ หยุดชั่วคราว")
+            request_abort()      # ปลุกทุกจุดที่กำลังรอ ให้เลิกกลางคันทันที
+            print("\n[บอท] ⏸ หยุดแล้ว — กด "
+                  + config.KEY_TOGGLE.upper() + " เพื่อเริ่มรอบใหม่")
             inp.unpark_game()
 
     keyboard.add_hotkey(config.KEY_TOGGLE, toggle)
@@ -205,6 +206,13 @@ def main():
                 else:
                     ok = deposit_to_trunk(sct)
                 state["last_change"] = time.time()   # กันจับค้างผิดหลังฝาก/ทิ้งเสร็จ
+
+                # กด F10 ระหว่างฝาก/ทิ้ง = ตั้งใจหยุด ไม่ใช่ครั้งที่พลาด
+                # กด F10 อีกทีจะเริ่มใหม่ตั้งแต่กด G ไม่ทำต่อจากที่ค้างไว้
+                if not state["active"]:
+                    print("[บอท] หยุดกลางคันตามที่สั่ง")
+                    continue
+
                 if ok:
                     deposit_fails = 0
                     print("===== ฝากเสร็จ กลับไปฟาร์มต่อ =====\n")
