@@ -7,6 +7,13 @@ stone_input.py - DirectInput สำหรับ Stone Bot
 import ctypes
 import time
 
+import config
+
+
+def _t(name, fallback):
+    """อ่านเวลาหน่วงจาก config (แก้ระหว่างบอทรันอยู่ได้)"""
+    return float(getattr(config, name, fallback))
+
 SendInput = ctypes.windll.user32.SendInput
 SetCursorPos = ctypes.windll.user32.SetCursorPos
 
@@ -347,35 +354,42 @@ def move_to(x, y):
     SetCursorPos(int(x), int(y))
 
 
-def click(x, y, delay=0.1):
+def click(x, y, delay=None):
     """คลิกซ้ายที่พิกัด"""
     move_to(x, y)
-    time.sleep(0.15)  # รอให้เกมรับตำแหน่ง cursor ก่อนคลิก
+    # ต้องรอให้เกมรับตำแหน่ง cursor ก่อน ไม่งั้นคลิกโดนที่เดิม
+    time.sleep(_t("CURSOR_SETTLE", 0.08))
     _mouse_event(MOUSEEVENTF_LEFTDOWN)
-    time.sleep(delay)
+    time.sleep(_t("BUTTON_HOLD", 0.06) if delay is None else delay)
     _mouse_event(MOUSEEVENTF_LEFTUP)
 
 
-def right_click(x, y, delay=0.15):
+def right_click(x, y, delay=None):
     """คลิกขวาที่พิกัด (เปิดเมนู Use/Give/Delete)"""
     move_to(x, y)
-    time.sleep(0.25)  # รอให้เกมรับตำแหน่ง cursor ก่อนคลิกขวา (สำคัญมาก)
+    # คลิกขวาไวเกินแล้วเมนูไม่ขึ้น เลยรอนานกว่าคลิกซ้าย
+    time.sleep(_t("CURSOR_SETTLE_RIGHT", 0.15))
     _mouse_event(MOUSEEVENTF_RIGHTDOWN)
-    time.sleep(delay)
+    time.sleep(_t("BUTTON_HOLD", 0.06) if delay is None else delay)
     _mouse_event(MOUSEEVENTF_RIGHTUP)
 
 
-def drag(x1, y1, x2, y2, duration=0.6, steps=25):
+def drag(x1, y1, x2, y2, duration=None, steps=None):
     """ลากไอเทมจาก (x1,y1) ไป (x2,y2) แบบ smooth"""
+    if duration is None:
+        duration = _t("DRAG_DURATION", 0.35)
+    if steps is None:
+        steps = max(4, int(getattr(config, "DRAG_STEPS", 12)))
+    grab = _t("DRAG_GRAB_DELAY", 0.10)
     move_to(x1, y1)
-    time.sleep(0.15)
+    time.sleep(grab)
     _mouse_event(MOUSEEVENTF_LEFTDOWN)
-    time.sleep(0.15)
+    time.sleep(grab)          # ให้เกมรู้ว่าจับของอยู่ ก่อนเริ่มลาก
     for i in range(1, steps + 1):
         t = i / steps
         move_to(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
         time.sleep(duration / steps)
-    time.sleep(0.15)
+    time.sleep(grab)          # ให้เกมรู้ตำแหน่งปลายทาง ก่อนปล่อยปุ่ม
     _mouse_event(MOUSEEVENTF_LEFTUP)
 
 

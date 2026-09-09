@@ -155,10 +155,21 @@ CHECK_INTERVAL = 2.0        # อ่าน counter ทุกกี่วิน�
 FULL_DETECTED_DELAY = 3.0   # เจอเต็ม 100 แล้วรอกี่วิ ก่อนเริ่มกด L
 GARAGE_OPEN_DELAY = 3.0     # รอหน้า GARAGE เปิดหลังกด L
 TRUNK_OPEN_DELAY = 3.0      # รอหน้า INVENTORY/SECONDARY เปิดหลังคลิก "เปิดหลังรถ"
-DIALOG_OPEN_DELAY = 1.5     # รอ dialog "นำเข้าท้ายรถ" เด้งหลังลากไอเทม
-CLICK_DELAY = 0.8           # ดีเลย์ระหว่างคลิกแต่ละจุด (Max → O)
-DRAG_DURATION = 0.8         # เวลาลากไอเทม
-AFTER_DEPOSIT_DELAY = 2.0   # รอหลังยืนยันฝากของ ก่อนกด ESC
+
+# ----- ความไวตอนลากของ / กด Max / กด O -----
+# เดิมตั้งเผื่อไว้เยอะ ฝากของ 1 ครั้งกินเวลาเกิน 6 วิ
+# ถ้าเครื่องช้าหรือเซิร์ฟหน่วง แล้วลากพลาดบ่อย ให้เพิ่มค่ากลับขึ้นไป
+# (set_config เมนู [v] ปรับได้ทั้งชุด แก้ตอนบอทรันอยู่ได้เลย)
+DIALOG_OPEN_DELAY = 0.6     # รอ dialog "นำเข้าท้ายรถ" เด้งหลังลากไอเทม
+CLICK_DELAY = 0.25          # ดีเลย์ระหว่างคลิกแต่ละจุด (Max → O)
+DRAG_DURATION = 0.35        # เวลาลากไอเทม
+DRAG_STEPS = 12             # ลากเป็นกี่ก้าว (น้อยลง = เบาเครื่องขึ้น)
+DRAG_GRAB_DELAY = 0.10      # รอตอนกดปุ่มจับของ และตอนถึงปลายทางก่อนปล่อย
+CURSOR_SETTLE = 0.08        # รอให้เกมรับตำแหน่ง cursor ก่อนคลิกซ้าย
+CURSOR_SETTLE_RIGHT = 0.15  # ก่อนคลิกขวา (ไวเกินแล้วเมนูไม่ขึ้น)
+BUTTON_HOLD = 0.06          # กดปุ่มเมาส์ค้างนานแค่ไหน
+UI_POLL = 0.15              # เช็คทุกกี่วิ ว่าหน้าท้ายรถ/กระเป๋าขึ้นหรือยัง
+AFTER_DEPOSIT_DELAY = 0.8   # รอหลังยืนยันฝากของ ก่อนกด ESC
 AFTER_CLOSE_DELAY = 1.5     # รอหลังกด ESC ก่อนเช็ค counter / กด G
 
 # ===== ตรวจว่า dialog "นำเข้าท้ายรถ" (Min/Max/O) เด้งจริงหลังลากไอเทม =====
@@ -281,6 +292,16 @@ def _load_user_config():
             g["CANCEL_BEFORE_OPEN"] = bool(data["CANCEL_BEFORE_OPEN"])
         if "STUCK_TIMEOUT" in data:
             g["STUCK_TIMEOUT"] = float(data["STUCK_TIMEOUT"])
+
+        # ความไวตอนลากของ/กดปุ่ม - ปรับหน้างานตอนบอทรันอยู่ได้
+        for key in ("DIALOG_OPEN_DELAY", "CLICK_DELAY", "DRAG_DURATION",
+                    "DRAG_GRAB_DELAY", "AFTER_DEPOSIT_DELAY", "CURSOR_SETTLE",
+                    "CURSOR_SETTLE_RIGHT", "BUTTON_HOLD", "MENU_OPEN_DELAY",
+                    "UI_POLL", "TRUNK_OPEN_DELAY", "BAG_OPEN_DELAY"):
+            if key in data:
+                g[key] = float(data[key])
+        if "DRAG_STEPS" in data:
+            g["DRAG_STEPS"] = int(data["DRAG_STEPS"])
     except Exception as e:
         print(f"[config] ⚠ ไม่สามารถโหลด user_config.json ได้: {e}")
 

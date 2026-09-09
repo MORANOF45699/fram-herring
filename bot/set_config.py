@@ -20,8 +20,30 @@ defaults = {
     "CHECK_INTERVAL": 2.0,
     "CAPTURE_MODE": "screen",
     "PARK_GAME_OFFSCREEN": False,
-    "TRUNK_FULL_MEMORY_MIN": 10.0
+    "TRUNK_FULL_MEMORY_MIN": 10.0,
+    "DIALOG_OPEN_DELAY": 0.6,
+    "CLICK_DELAY": 0.25,
+    "DRAG_DURATION": 0.35,
+    "DRAG_GRAB_DELAY": 0.10,
+    "AFTER_DEPOSIT_DELAY": 0.8
 }
+
+
+def ask_speed(config):
+    """ปรับความไวตอนลากของ / กด Max / กด O"""
+    print()
+    print("  กด Enter ผ่านไปเลย = ใช้ค่าเดิม")
+    for key, label in (("DRAG_DURATION", "เวลาลากไอเทม"),
+                       ("DRAG_GRAB_DELAY", "รอตอนจับ/ปล่อยของ"),
+                       ("DIALOG_OPEN_DELAY", "รอ dialog เด้งหลังลาก"),
+                       ("CLICK_DELAY", "รอระหว่างกด Max กับ O"),
+                       ("AFTER_DEPOSIT_DELAY", "รอหลังยืนยันฝากของ")):
+        try:
+            val = input(f"  {label} (วิ) [เดิม {config[key]:.2f}]: ").strip()
+            if val:
+                config[key] = float(val)
+        except ValueError:
+            input("  ค่าไม่ถูกต้อง ใส่ตัวเลขเท่านั้น (กด Enter เพื่อไปต่อ)")
 
 
 def load_config():
@@ -87,12 +109,19 @@ def main():
         print(f"  [7] วิธีจับภาพ                : {cap_str}")
         print(f"  [8] จอดเกมไว้นอกจอ            : {park_str}")
         print(f"  [t] จำว่าท้ายรถเต็มนานแค่ไหน   : {config.get('TRUNK_FULL_MEMORY_MIN', 10.0):.1f} นาที")
+        move_secs = (config["DRAG_DURATION"] + config["DRAG_GRAB_DELAY"] * 3
+                     + config["DIALOG_OPEN_DELAY"] + config["CLICK_DELAY"]
+                     + config["AFTER_DEPOSIT_DELAY"])
+        print(f"  [v] ความไวตอนลาก/กด Max/กด O   : ฝาก 1 ครั้ง ~{move_secs:.1f} วิ")
+        print(f"      ลาก {config['DRAG_DURATION']:.2f} | dialog {config['DIALOG_OPEN_DELAY']:.2f} | "
+              f"Max->O {config['CLICK_DELAY']:.2f} | หลังยืนยัน {config['AFTER_DEPOSIT_DELAY']:.2f}")
+        print("      * ไวไปแล้วลากพลาดบ่อย ให้เพิ่มค่ากลับขึ้น")
         print("-" * 60)
         print("  [9] บันทึกและออก (Save & Exit)")
         print("  [0] ยกเลิกและออก (Exit without saving)")
         print("=" * 60)
 
-        choice = input("กรุณาเลือกเมนู (0-9 หรือ t): ").strip().lower()
+        choice = input("กรุณาเลือกเมนู (0-9, t, v): ").strip().lower()
 
         if choice == "1":
             config["ENABLE_DRINK"] = not config["ENABLE_DRINK"]
@@ -124,6 +153,8 @@ def main():
                     config["CHECK_INTERVAL"] = float(val)
             except ValueError:
                 input("ค่าไม่ถูกต้อง! กรุณาใส่ตัวเลขเท่านั้น (กด Enter เพื่อลองใหม่)")
+        elif choice == "v":
+            ask_speed(config)
         elif choice == "7":
             if config.get("CAPTURE_MODE", "screen") == "window":
                 config["CAPTURE_MODE"] = "screen"

@@ -145,6 +145,25 @@ def clear_abort():
     _abort[0] = False
 
 
+
+def _wait_for(sct, check, timeout, tag, what):
+    """
+    รอจนกว่า check() จะเป็นจริง แล้วไปต่อทันที (ไม่รอจนครบเวลา)
+    เดิมรอตายตัวเต็มเวลาทุกครั้ง ทั้งที่หน้าต่างขึ้นตั้งแต่ 0.3 วิ
+    คืน True ถ้าเห็น, False ถ้าครบเวลาแล้วยังไม่เห็น
+    """
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        if _abort[0]:
+            return False
+        # เฟรมยังไม่มา อ่านอะไรก็ได้ภาพดำ ไม่นับ รอต่อ
+        if sct.ready() and check(sct):
+            print(f"[{tag}] เห็น{what}แล้ว ({time.time() - t0:.1f} วิ)")
+            return True
+        time.sleep(config.UI_POLL)
+    return False
+
+
 def _aborted(tag):
     """ถูกสั่งพักหรือยัง — ถ้าใช่ ปิดหน้าต่างให้เรียบร้อยแล้วเลิก"""
     if not _abort[0]:
@@ -236,12 +255,12 @@ def _deposit_to_trunk(sct):
             return False
         print(f"[ฝาก] กด L เปิดท้ายรถ (ครั้งที่ {attempt})...")
         inp.press_l()
-        time.sleep(config.TRUNK_OPEN_DELAY)
         if not check_garage:          # ไม่มี template → เชื่อว่าเปิดแล้ว เดินหน้าต่อ
+            time.sleep(config.TRUNK_OPEN_DELAY)
             opened = True
             break
-        if is_garage_open(sct):
-            print("[ฝาก] ✓ หน้าท้ายรถเปิดแล้ว")
+        if _wait_for(sct, is_garage_open, config.TRUNK_OPEN_DELAY,
+                     "ฝาก", "หน้าท้ายรถ"):
             opened = True
             break
         print("[ฝาก] ⚠ หน้าท้ายรถยังไม่เปิด — กู้สถานะแล้วลองกด L ใหม่")
@@ -341,12 +360,12 @@ def _discard_items(sct):
             return False
         print(f"[ทิ้ง] กด T เปิดกระเป๋า (ครั้งที่ {attempt})...")
         inp.press_t()
-        time.sleep(config.BAG_OPEN_DELAY)
         if not check_bag:             # ไม่มี template → เชื่อว่าเปิดแล้ว เดินหน้าต่อ
+            time.sleep(config.BAG_OPEN_DELAY)
             opened = True
             break
-        if is_bag_open(sct):
-            print("[ทิ้ง] ✓ หน้ากระเป๋าเปิดแล้ว")
+        if _wait_for(sct, is_bag_open, config.BAG_OPEN_DELAY,
+                     "ทิ้ง", "หน้ากระเป๋า"):
             opened = True
             break
         print("[ทิ้ง] ⚠ หน้ากระเป๋ายังไม่เปิด — กู้สถานะแล้วลองกด T ใหม่")
