@@ -11,7 +11,12 @@ import config
 
 
 def _t(name, fallback):
-    """อ่านเวลาหน่วงจาก config (แก้ระหว่างบอทรันอยู่ได้)"""
+    """
+    อ่านเวลาหน่วงจาก config (แก้ระหว่างบอทรันอยู่ได้)
+    คิดความเร็วรวม (SPEED_PERCENT) ให้ด้วย
+    """
+    if hasattr(config, "t"):
+        return config.t(name, fallback)
     return float(getattr(config, name, fallback))
 
 SendInput = ctypes.windll.user32.SendInput

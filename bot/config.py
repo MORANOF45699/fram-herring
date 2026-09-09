@@ -169,6 +169,34 @@ CURSOR_SETTLE = 0.08        # รอให้เกมรับตำแหน�
 CURSOR_SETTLE_RIGHT = 0.15  # ก่อนคลิกขวา (ไวเกินแล้วเมนูไม่ขึ้น)
 BUTTON_HOLD = 0.06          # กดปุ่มเมาส์ค้างนานแค่ไหน
 UI_POLL = 0.15              # เช็คทุกกี่วิ ว่าหน้าท้ายรถ/กระเป๋าขึ้นหรือยัง
+
+
+# ===== ความเร็วรวม (เปอร์เซ็นต์) =====
+# 100 = ใช้ค่าหน่วงตามที่ตั้งไว้ข้างบนตรง ๆ
+# 200 = หน่วงครึ่งเดียว (เร็วขึ้น 2 เท่า)   50 = หน่วงสองเท่า (ช้าลง ปลอดภัยขึ้น)
+# ปรับตัวเดียวคุมทั้งชุด ไม่ต้องไล่แก้ทีละค่า
+SPEED_PERCENT = 100.0
+SPEED_MIN, SPEED_MAX = 25.0, 400.0
+
+# ค่าที่โดนคูณด้วยความเร็วรวม (เฉพาะตอนลากของ/กดปุ่ม ไม่ยุ่งกับเวลาเดิน)
+SPEED_SCALED_KEYS = (
+    "DRAG_DURATION", "DRAG_GRAB_DELAY", "DIALOG_OPEN_DELAY", "CLICK_DELAY",
+    "AFTER_DEPOSIT_DELAY", "CURSOR_SETTLE", "CURSOR_SETTLE_RIGHT", "BUTTON_HOLD",
+    "MENU_OPEN_DELAY",
+)
+
+
+def t(name, fallback=0.0):
+    """
+    เวลาหน่วงหลังคิดความเร็วรวมแล้ว
+    ชื่อที่ไม่ได้อยู่ใน SPEED_SCALED_KEYS จะคืนค่าเดิม ไม่โดนคูณ
+    """
+    base = float(globals().get(name, fallback))
+    if name not in SPEED_SCALED_KEYS:
+        return base
+    pct = min(max(float(SPEED_PERCENT), SPEED_MIN), SPEED_MAX)
+    return base * 100.0 / pct
+
 AFTER_DEPOSIT_DELAY = 0.8   # รอหลังยืนยันฝากของ ก่อนกด ESC
 AFTER_CLOSE_DELAY = 1.5     # รอหลังกด ESC ก่อนเช็ค counter / กด G
 
@@ -292,6 +320,9 @@ def _load_user_config():
             g["CANCEL_BEFORE_OPEN"] = bool(data["CANCEL_BEFORE_OPEN"])
         if "STUCK_TIMEOUT" in data:
             g["STUCK_TIMEOUT"] = float(data["STUCK_TIMEOUT"])
+
+        if "SPEED_PERCENT" in data:
+            g["SPEED_PERCENT"] = float(data["SPEED_PERCENT"])
 
         # ความไวตอนลากของ/กดปุ่ม - ปรับหน้างานตอนบอทรันอยู่ได้
         for key in ("DIALOG_OPEN_DELAY", "CLICK_DELAY", "DRAG_DURATION",

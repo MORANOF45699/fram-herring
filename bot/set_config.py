@@ -21,6 +21,7 @@ defaults = {
     "CAPTURE_MODE": "screen",
     "PARK_GAME_OFFSCREEN": False,
     "TRUNK_FULL_MEMORY_MIN": 10.0,
+    "SPEED_PERCENT": 100.0,
     "DIALOG_OPEN_DELAY": 0.6,
     "CLICK_DELAY": 0.25,
     "DRAG_DURATION": 0.35,
@@ -109,10 +110,15 @@ def main():
         print(f"  [7] วิธีจับภาพ                : {cap_str}")
         print(f"  [8] จอดเกมไว้นอกจอ            : {park_str}")
         print(f"  [t] จำว่าท้ายรถเต็มนานแค่ไหน   : {config.get('TRUNK_FULL_MEMORY_MIN', 10.0):.1f} นาที")
+        pct = float(config.get("SPEED_PERCENT", 100.0))
+        k = 100.0 / max(25.0, min(400.0, pct))
         move_secs = (config["DRAG_DURATION"] + config["DRAG_GRAB_DELAY"] * 3
                      + config["DIALOG_OPEN_DELAY"] + config["CLICK_DELAY"]
-                     + config["AFTER_DEPOSIT_DELAY"])
-        print(f"  [v] ความไวตอนลาก/กด Max/กด O   : ฝาก 1 ครั้ง ~{move_secs:.1f} วิ")
+                     + config["AFTER_DEPOSIT_DELAY"]) * k
+        print(f"  [%] ความเร็วรวม                : {pct:.0f}%  "
+              f"(ฝาก 1 ครั้ง ~{move_secs:.1f} วิ)")
+        print("      มากกว่า 100 = เร็วขึ้น / น้อยกว่า 100 = ช้าลง ปลอดภัยขึ้น")
+        print(f"  [v] ปรับทีละค่าเอง             : ลาก {config['DRAG_DURATION']:.2f} วิ ฯลฯ")
         print(f"      ลาก {config['DRAG_DURATION']:.2f} | dialog {config['DIALOG_OPEN_DELAY']:.2f} | "
               f"Max->O {config['CLICK_DELAY']:.2f} | หลังยืนยัน {config['AFTER_DEPOSIT_DELAY']:.2f}")
         print("      * ไวไปแล้วลากพลาดบ่อย ให้เพิ่มค่ากลับขึ้น")
@@ -121,7 +127,7 @@ def main():
         print("  [0] ยกเลิกและออก (Exit without saving)")
         print("=" * 60)
 
-        choice = input("กรุณาเลือกเมนู (0-9, t, v): ").strip().lower()
+        choice = input("กรุณาเลือกเมนู (0-9, t, v, %): ").strip().lower()
 
         if choice == "1":
             config["ENABLE_DRINK"] = not config["ENABLE_DRINK"]
@@ -153,6 +159,14 @@ def main():
                     config["CHECK_INTERVAL"] = float(val)
             except ValueError:
                 input("ค่าไม่ถูกต้อง! กรุณาใส่ตัวเลขเท่านั้น (กด Enter เพื่อลองใหม่)")
+        elif choice == "%":
+            try:
+                val = input("ความเร็วรวม % (100 = ปกติ, 200 = เร็วขึ้น 2 เท่า, "
+                            f"50 = ช้าลงครึ่ง) [เดิม {pct:.0f}]: ").strip()
+                if val:
+                    config["SPEED_PERCENT"] = float(val)
+            except ValueError:
+                input("ค่าไม่ถูกต้อง! ใส่ตัวเลขเท่านั้น (กด Enter เพื่อลองใหม่)")
         elif choice == "v":
             ask_speed(config)
         elif choice == "7":

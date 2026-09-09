@@ -293,8 +293,8 @@ def _deposit_to_trunk(sct):
 
         drop = candidates[(attempt - 1) % len(candidates)]
         print(f"[ฝาก] ลากไอเทม {slot} → {drop} (ครั้งที่ {attempt}/{attempts})")
-        inp.drag(*slot, *drop, duration=config.DRAG_DURATION)
-        time.sleep(config.DIALOG_OPEN_DELAY)
+        inp.drag(*slot, *drop, duration=config.t("DRAG_DURATION"))
+        time.sleep(config.t("DIALOG_OPEN_DELAY"))
 
         if check_dialog and not is_dialog_open(sct):
             print("[ฝาก] ⚠ dialog ไม่เด้ง (ช่องปลายทางน่าจะมีของอยู่) — ลองจุดปล่อยถัดไป")
@@ -302,10 +302,10 @@ def _deposit_to_trunk(sct):
 
         print("[ฝาก] คลิก Max...")
         inp.click(*config.BTN_MAX)
-        time.sleep(config.CLICK_DELAY)
+        time.sleep(config.t("CLICK_DELAY"))
         print("[ฝาก] คลิกยืนยัน O...")
         inp.click(*config.BTN_CONFIRM)
-        time.sleep(config.AFTER_DEPOSIT_DELAY)
+        time.sleep(config.t("AFTER_DEPOSIT_DELAY"))
 
         # counter บน HUD ยังเห็นได้ทั้งที่หน้าต่างเปิดอยู่ → เช็คได้เลย
         if is_stone_empty(sct):
@@ -391,20 +391,20 @@ def _discard_items(sct):
     # Step 3: คลิกขวา → คลิก Delete
     print(f"[ทิ้ง] คลิกขวาช่องของ {slot}")
     inp.right_click(*slot)
-    time.sleep(config.MENU_OPEN_DELAY)
+    time.sleep(config.t("MENU_OPEN_DELAY"))
     dx, dy = config.DELETE_OFFSET
     del_pt = (slot[0] + dx, slot[1] + dy)
     print(f"[ทิ้ง] คลิก Delete ที่ {del_pt}")
     inp.click(*del_pt)
-    time.sleep(config.DIALOG_OPEN_DELAY)
+    time.sleep(config.t("DIALOG_OPEN_DELAY"))
 
     # Step 4: Max → ยืนยัน O
     print("[ทิ้ง] คลิก Max...")
     inp.click(*config.BTN_MAX)
-    time.sleep(config.CLICK_DELAY)
+    time.sleep(config.t("CLICK_DELAY"))
     print("[ทิ้ง] คลิกยืนยัน O...")
     inp.click(*config.BTN_CONFIRM)
-    time.sleep(config.AFTER_DEPOSIT_DELAY)
+    time.sleep(config.t("AFTER_DEPOSIT_DELAY"))
 
     # Step 5: ปิดหน้าต่าง
     print("[ทิ้ง] กด ESC ปิดหน้าต่าง")
