@@ -76,6 +76,19 @@ _full_template_mask = None
 _full_min_width = None
 
 
+def _text_width(mask):
+    """
+    ความกว้างข้อความเป็น px - นับเฉพาะ contour ที่สูงพอ (= ตัวเลข ไม่ใช่ noise)
+    ใช้ทั้งกับ template และภาพจอจริง ต้องวัดแบบเดียวกันถึงเทียบกันได้
+    """
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    boxes = [cv2.boundingRect(c) for c in contours]
+    boxes = [b for b in boxes if b[3] >= max(6, int(10 * config.SCALE))]
+    if not boxes:
+        return 0
+    return max(b[0] + b[2] for b in boxes) - min(b[0] for b in boxes)
+
+
 def full_min_width():
     """ความกว้างข้อความขั้นต่ำที่ถือว่าเต็ม (คำนวณจาก template — รองรับทุกความจุ)"""
     return _full_min_width if _full_min_width is not None else config.FULL_TEXT_MIN_WIDTH
@@ -93,9 +106,12 @@ def full_match_score(sct, debug=False):
         if tmpl is None:
             raise FileNotFoundError(f"ไม่พบ {FULL_TEMPLATE}")
         _full_template_mask = _orange_mask(_scale_template(tmpl))
-        xs = np.where(_full_template_mask.any(axis=0))[0]
-        if len(xs):
-            _full_min_width = int((xs[-1] - xs[0] + 1) * 0.85)
+        # วัดความกว้าง template ด้วยวิธีเดียวกับตอนอ่านจอจริง (เฉพาะตัวเลขที่สูงพอ)
+        # ห้ามนับพิกเซลส้มทั้งหมด: ถ้าตอนถ่ายติดจุดส้มเล็ก ๆ จากไอคอนข้างล่างมาด้วย
+        # template 40/40 จะวัดได้ 104px แต่จอจริงวัดได้ 45px -> ไม่มีวันถือว่าเต็ม
+        tw = _text_width(_full_template_mask)
+        if tw:
+            _full_min_width = int(tw * 0.85)
 
     bgr = _grab(sct, config.COUNTER_REGION)
     mask = _orange_mask(bgr)
@@ -103,10 +119,7 @@ def full_match_score(sct, debug=False):
     result = cv2.matchTemplate(mask, _full_template_mask, cv2.TM_CCOEFF_NORMED)
     _, max_val, _, _ = cv2.minMaxLoc(result)
 
-    # วัดความกว้างข้อความ (เฉพาะ contour ที่สูงพอ = ตัวเลข ไม่ใช่ noise)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    boxes = [cv2.boundingRect(c) for c in contours if cv2.boundingRect(c)[3] >= 10]
-    width = (max(b[0] + b[2] for b in boxes) - min(b[0] for b in boxes)) if boxes else 0
+    width = _text_width(mask)
 
     if debug:
         os.makedirs(DEBUG_DIR, exist_ok=True)
@@ -272,6 +285,6 @@ if __name__ == '__main__':
     with mss.mss() as sct:
         while True:
             score, width = full_match_score(sct, debug=True)
-            full = score >= config.FULL_MATCH_THRESHOLD and width >= config.FULL_TEXT_MIN_WIDTH
+            full = score >= config.FULL_MATCH_THRESHOLD and width >= full_min_width()
             print(f"score={score:.3f} width={width}px {'🔴 เต็ม!' if full else '⏳ ยังไม่เต็ม'}")
             time.sleep(1)
