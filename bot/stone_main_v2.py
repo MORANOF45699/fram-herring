@@ -130,7 +130,7 @@ def bot_loop():
             hud_str = f"{water_str} | {food_str}"
 
             if full:
-                set_status(f"🔴 เต็ม! กำลังจัดการ | {hud_str}", "#e74c3c")
+                set_status(f"🔴 เต็ม! ({score:.2f}) กำลังจัดการ | {hud_str}", "#e74c3c")
             else:
                 set_status(f"⛏ ฟาร์ม {score:.2f} | {hud_str}", "#2ecc71")
 

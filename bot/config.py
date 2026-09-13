@@ -97,7 +97,11 @@ INV_SCROLL_RETRIES = 4       # หาช่อง Stone ไม่เจอ → �
 
 # ===== เกณฑ์ตัดสินว่าเต็ม 100/100 (ต้องผ่านทั้งสองข้อ) =====
 FULL_TEMPLATE = os.path.join(TEMPLATE_DIR, "full_template.png")
-FULL_MATCH_THRESHOLD = 0.80              # template matching mask "100/100"
+# ต้องเหมือนภาพตอนเต็มแค่ไหน ถึงถือว่าเต็ม
+# 0.80 เดิมหลวมไป: 10/40 กับ 40/40 ต่างกันแค่เลขตัวแรก ได้ score 0.87 ผ่านเกณฑ์
+# ทำให้ความจุ 40 หยุดตั้งแต่นับถึง 10
+# วัดจาก log จริง: ตอนฟาร์มสูงสุด 0.80 / ตอนเต็มจริง 0.99-1.00 (ทั้ง 40/40 และ 100/100)
+FULL_MATCH_THRESHOLD = 0.93
 FULL_TEXT_MIN_WIDTH = int(59 * SCALE)    # ความกว้างข้อความ px (สเกลตามจอ)
 
 # ===== ตรวจว่าแผนที่/เมนู pause เปิดค้างไหม (กัน ESC พลาดไปเปิดแผนที่) =====
@@ -321,6 +325,8 @@ def _load_user_config():
         if "STUCK_TIMEOUT" in data:
             g["STUCK_TIMEOUT"] = float(data["STUCK_TIMEOUT"])
 
+        if "FULL_MATCH_THRESHOLD" in data:
+            g["FULL_MATCH_THRESHOLD"] = float(data["FULL_MATCH_THRESHOLD"])
         if "SPEED_PERCENT" in data:
             g["SPEED_PERCENT"] = float(data["SPEED_PERCENT"])
 
