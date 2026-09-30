@@ -156,7 +156,9 @@ CANCEL_REPEAT_GUARD = 10.0  # กด X ไปแล้วภายในกี�
 
 # ===== เวลา (วินาที) — เมนูเกมเปิดช้า ปรับเพิ่ม/ลดตรงนี้ =====
 CHECK_INTERVAL = 2.0        # อ่าน counter ทุกกี่วินาทีระหว่างฟาร์ม
-FULL_DETECTED_DELAY = 3.0   # เจอเต็ม 100 แล้วรอกี่วิ ก่อนเริ่มกด L
+# เจอว่าของเต็มแล้วรอกี่วิ ก่อนกด L/T เปิดหน้าต่าง
+# (กด X ยกเลิกฟาร์มก่อน แล้วรอตัวละครเลิกแอนิเมชันให้เรียบร้อย)
+FULL_DETECTED_DELAY = 7.0
 GARAGE_OPEN_DELAY = 3.0     # รอหน้า GARAGE เปิดหลังกด L
 TRUNK_OPEN_DELAY = 3.0      # รอหน้า INVENTORY/SECONDARY เปิดหลังคลิก "เปิดหลังรถ"
 
@@ -325,6 +327,8 @@ def _load_user_config():
         if "STUCK_TIMEOUT" in data:
             g["STUCK_TIMEOUT"] = float(data["STUCK_TIMEOUT"])
 
+        if "FULL_DETECTED_DELAY" in data:
+            g["FULL_DETECTED_DELAY"] = float(data["FULL_DETECTED_DELAY"])
         if "FULL_MATCH_THRESHOLD" in data:
             g["FULL_MATCH_THRESHOLD"] = float(data["FULL_MATCH_THRESHOLD"])
         if "SPEED_PERCENT" in data:
